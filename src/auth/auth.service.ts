@@ -26,7 +26,6 @@ export class AuthService {
    * signUp
    */
   public async signUp(signupDTO: SignupDTO): Promise<AuthenticatedUser> {
-    console.log('herrrr');
     this.verifyPasswordStrength(signupDTO.password);
 
     const user = await this.usersService.createUser(signupDTO);

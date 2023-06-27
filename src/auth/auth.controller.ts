@@ -6,11 +6,13 @@ import {
   Param,
   Post,
   Res,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { LoginDTO, SignupDTO } from './dtos';
 import { AuthService } from './auth.service';
+import { LocalAuthGuard } from 'src/middlewares/local-auth.guard';
 
 @Controller('auth')
 @UsePipes(new ValidationPipe())
@@ -29,13 +31,14 @@ export class AuthController {
     return this.authService.emailVerify(otp);
   }
 
+  
+  // @UseGuards(LocalAuthGuard)
   @HttpCode(200)
   @Post('login')
   async onUserLogin(
-    @Body() loginDTO: LoginDTO,
-    @Res() response: LoginDTO
+    @Body() loginDTO: LoginDTO
     ) {
-    return await this.authService.login(loginDTO.email);
+    return await this.authService.login(loginDTO);
   }
 
   @HttpCode(201)

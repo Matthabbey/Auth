@@ -41,11 +41,10 @@ export class UsersService {
     return await this.userRepository.findOne({ where: { email: email } });
   }
 
-  public async findUserByEmail(req: string) {
+  public async findUserByEmail(req: any) {
     try {
-      const cookie = req.headers['authorization'];
 
-      const data = await this.jwtService.verifyAsync(cookie);
+      const data = req.user
 
       if (!data) {
         throw new HttpException('USER NOT FOUND', HttpStatus.NOT_FOUND);
@@ -53,7 +52,7 @@ export class UsersService {
 
       const user = await this._findByAttr(data.email)
 
-      const { password, ...result } = user;
+      const { password, resetToken, salt, ...result } = user;
 
       return result;
     } catch (e) {
@@ -103,6 +102,26 @@ export class UsersService {
     }
   }
 
+  // async validateUserCreds(email: string, password: string): Promise<any> {
+  //   const user = await this.userService.getUserByEmail(email);
+
+  //   if (!user) throw new BadRequestException();
+
+  //   if (!(await bcrypt.compare(password, user.password)))
+  //     throw new UnauthorizedException();
+
+  //   return user;
+  // }
+
+  // generateToken(user: any) {
+  //   return {
+  //     access_token: this.jwtService.sign({
+  //       email: user.email,
+  //       id: user.id,
+  //     }),
+  //   };
+  // }
+
   public async emailVerification(token: number) {
     const verify = await this.userRepository.findOne({ where: { otp: token } });
 
@@ -125,7 +144,7 @@ export class UsersService {
 
   public async loginUser(loginDTO: LoginDTO) {
     try {
-      let signature: any;
+      let access_token: any;
       const user = await this._findByAttr(loginDTO.email);
       if (!user) {
         throw new UserNotFoundError();
@@ -134,16 +153,17 @@ export class UsersService {
         throw new Error('Kindly verify this user');
       }
       if (!user || !user == (await compare(loginDTO.password, user.password))) {
-        throw new Error('Password not matched');
+        return { message: 'Password not matched'};
       } else {
-        signature = await Generatesignature({
+        access_token = await Generatesignature({
           id: user.id,
           email: user.email,
           verified: user.verified,
         });
       }
       return {
-        message: 'You have successfully logged in'
+        message: 'You have successfully logged in',
+        access_token
       };
     } catch (error) {
       console.log(error);

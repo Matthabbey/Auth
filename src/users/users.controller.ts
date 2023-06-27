@@ -11,12 +11,14 @@ import {
   Req,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CahngeAccountStatusDTO } from './dtos';
 import { AccountState } from './account-state';
 import { User } from './entities';
 import { JwtService } from '@nestjs/jwt';
+import { JwtAuthGuard } from 'src/middlewares/jwt-auth.guard';
 
 @Controller('users')
 @UsePipes(new ValidationPipe())
@@ -37,12 +39,16 @@ export class UsersController {
       state: AccountState.INACTIVE,
     });
   }
+
+  // @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   @Get('all')
   async onGetUsers(): Promise<User[]> {
     return this.usersService.getAllUsers();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('user')
   async findOneUser(@Req() request: any) {
     return this.usersService.findUserByEmail(request)
