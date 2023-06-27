@@ -36,7 +36,6 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       salt: user.salt,
-      accessToken: sign(user.id.toString(), process.env.JWT_SECRET),
     };
   }
 

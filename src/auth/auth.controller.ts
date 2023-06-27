@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Res,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -30,8 +31,11 @@ export class AuthController {
 
   @HttpCode(200)
   @Post('login')
-  async onUserLogin(@Body() loginDTO: LoginDTO) {
-    return await this.authService.login(loginDTO);
+  async onUserLogin(
+    @Body() loginDTO: LoginDTO,
+    @Res() response: LoginDTO
+    ) {
+    return await this.authService.login(loginDTO.email);
   }
 
   @HttpCode(201)

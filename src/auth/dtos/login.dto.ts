@@ -6,4 +6,7 @@ export class LoginDTO {
 
     @IsString()
     readonly password: string
+
+    @IsString()
+    response: string
 }

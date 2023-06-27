@@ -1,19 +1,17 @@
 import { compare, genSalt, hash } from 'bcrypt';
 import { AuthPayload } from './interfaces';
 import { JwtPayload, sign, verify } from 'jsonwebtoken';
-import * as nodemailer from "nodemailer";
-
-
+import * as nodemailer from 'nodemailer';
 
 // Generating of salt code
 export const GenerateSalt = async () => {
   return await genSalt();
 };
 
-export const generateOTP = ()=> {
+export const generateOTP = () => {
   // Generate a random OTP (e.g., 6-digit number)
-  return Math.floor(100000 + Math.random() * 900000)
-}
+  return Math.floor(100000 + Math.random() * 900000);
+};
 
 export const GeneratePassword = async (
   plainTextPassword: string,
@@ -46,9 +44,8 @@ export const validatePassword = async (
   return (await GeneratePassword(enteredPassword, salt)) === savedPassword;
 };
 
-
 const transport = nodemailer.createTransport({
-  service: "gmail",
+  service: 'gmail',
   auth: {
     user: process.env.GMAIL_USER, // generated ethereal user
     pass: process.env.GMAIL_PASSWORD, // generated ethereal password
@@ -62,7 +59,7 @@ export const mailSent = async (
   from: string, //'"Fred Foo 👻" <foo@example.com>', // sender address
   to: string, //"bar@example.com, baz@example.com", // list of receivers
   subject: string, //"Hello ✔", // Subject line
-  html: string //"<b>Hello world?</b>", // html body
+  html: string, //"<b>Hello world?</b>", // html body
 ) => {
   try {
     const response = await transport.sendMail({
@@ -76,7 +73,6 @@ export const mailSent = async (
     console.log(error);
   }
 };
-
 
 export const emailHtml = (otp: number) => {
   let response = `

@@ -22,22 +22,46 @@ import {
 import { ChangeStatusRequest } from './interfaces/change-status-request.interface';
 import { compare } from 'bcrypt';
 import { AuthenticatedUser, ForgottenPassword } from 'src/auth/interface';
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
+import { request } from 'express';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
 
   async getAllUsers(): Promise<User[]> {
     return this.userRepository.find();
   }
-
   private async _findByAttr(email: string) {
     return await this.userRepository.findOne({ where: { email: email } });
   }
+
+  public async findUserByEmail(req: string) {
+    try {
+      const cookie = req.headers['authorization'];
+
+      const data = await this.jwtService.verifyAsync(cookie);
+
+      if (!data) {
+        throw new HttpException('USER NOT FOUND', HttpStatus.NOT_FOUND);
+      }
+
+      const user = await this._findByAttr(data.email)
+
+      const { password, ...result } = user;
+
+      return result;
+    } catch (e) {
+      throw new Error(e);
+   
+  }
+  }
+
 
   private async _verifyUserPassword(password: string, inputPassword: string) {
     const passwordMatch = await matchPassword(password, inputPassword);
@@ -119,10 +143,7 @@ export class UsersService {
         });
       }
       return {
-        message: 'You have successfully logged in',
-        verified: user.verified,
-        email: user.email,
-        signature,
+        message: 'You have successfully logged in'
       };
     } catch (error) {
       console.log(error);
