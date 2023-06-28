@@ -46,6 +46,10 @@ export class AuthService {
     return await this.usersService.loginUser(loginDTO);
   }
 
+  public async updateProfile(find: any, update: any){
+    return await this.usersService.updateUserProfile(find, update)
+  }
+
   public async sendEmailForgotPassword(email: string): Promise<boolean>{
     return await this.usersService.requestPasswordReset(email)
   }

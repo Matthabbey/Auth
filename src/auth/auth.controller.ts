@@ -41,6 +41,8 @@ export class AuthController {
     return await this.authService.login(loginDTO);
   }
 
+  
+
   @HttpCode(201)
   @Post('email/forgot-password')
   async sendEmailForgotPassword(@Body('email') email: string) {

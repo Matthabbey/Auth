@@ -23,8 +23,8 @@ import { ChangeStatusRequest } from './interfaces/change-status-request.interfac
 import { compare } from 'bcrypt';
 import { AuthenticatedUser, ForgottenPassword } from 'src/auth/interface';
 import * as nodemailer from 'nodemailer';
-import { request } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from 'jsonwebtoken';
 
 @Injectable()
 export class UsersService {
@@ -43,24 +43,26 @@ export class UsersService {
 
   public async findUserByEmail(req: any) {
     try {
-
-      const data = req.user
+      const data = req.user;
 
       if (!data) {
         throw new HttpException('USER NOT FOUND', HttpStatus.NOT_FOUND);
       }
 
-      const user = await this._findByAttr(data.email)
+      const user = await this._findByAttr(data.email);
+      if (!user) {
+        return {
+          message: 'User Not Found',
+        };
+      }
 
       const { password, resetToken, salt, ...result } = user;
 
       return result;
     } catch (e) {
       throw new Error(e);
-   
+    }
   }
-  }
-
 
   private async _verifyUserPassword(password: string, inputPassword: string) {
     const passwordMatch = await matchPassword(password, inputPassword);
@@ -90,11 +92,53 @@ export class UsersService {
         user.salt = salt;
         user.otp = otp;
 
-        const html = emailHtml(otp);
+        if (user) {
+          let transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.GMAIL_USER, // generated ethereal user
+              pass: process.env.GMAIL_PASSWORD, // generated ethereal password
+            },
+            tls: {
+              rejectUnauthorized: false,
+            },
+          });
 
-      await mailSent(process.env.ADMIN, signupDTO.email, process.env.USER, html);
+          let mailOptions = {
+            from: '"Company" <' + process.env.USER_NAME + '>',
+            to: user.email, // list of receivers (separated by ,)
+            subject: 'OTP',
+            text: 'OtP',
+            html: `Here is your  OTP ${otp} to verify your account`, // html body
+          };
+
+          const sent = await new Promise<boolean>(async function (
+            resolve,
+            reject,
+          ) {
+            return await transporter.sendMail(
+              mailOptions,
+              async (error, info) => {
+                if (error) {
+                  console.log('Message sent: %s', error);
+                  return reject(false);
+                }
+                console.log('Message sent: %s', info.messageId);
+                resolve(true);
+              },
+            );
+          });
+        } else {
+          throw new HttpException(
+            'REGISTER.USER_NOT_REGISTERED',
+            HttpStatus.FORBIDDEN,
+          );
+        }
+
+        //   const html = emailHtml(otp);
+
+        // await mailSent(process.env.ADMIN, signupDTO.email, process.env.USER, html);
         return this.userRepository.save(user);
-        
       }
     } catch (error) {
       console.log(error.message);
@@ -102,28 +146,11 @@ export class UsersService {
     }
   }
 
-  // async validateUserCreds(email: string, password: string): Promise<any> {
-  //   const user = await this.userService.getUserByEmail(email);
-
-  //   if (!user) throw new BadRequestException();
-
-  //   if (!(await bcrypt.compare(password, user.password)))
-  //     throw new UnauthorizedException();
-
-  //   return user;
-  // }
-
-  // generateToken(user: any) {
-  //   return {
-  //     access_token: this.jwtService.sign({
-  //       email: user.email,
-  //       id: user.id,
-  //     }),
-  //   };
-  // }
-
   public async emailVerification(token: number) {
     const verify = await this.userRepository.findOne({ where: { otp: token } });
+    if (!token) {
+      return { message: 'Wrong Token For verification' };
+    }
 
     if (verify && verify.email && verify.id) {
       const user = await this.userRepository.findOne({
@@ -132,7 +159,13 @@ export class UsersService {
       if (user) {
         user.verified = true;
         const userVerified = await this.userRepository.save(user);
-        return user.email, user.otp;
+        if (userVerified.verified === true) {
+          throw new HttpException(
+            'THIS_USER HAS ALREADY BEEN VERIFIED',
+            HttpStatus.FORBIDDEN,
+          );
+        }
+        return { message: user.verified };
       }
     } else {
       throw new HttpException(
@@ -150,10 +183,10 @@ export class UsersService {
         throw new UserNotFoundError();
       }
       if (user.verified !== true) {
-        throw new Error('Kindly verify this user');
+        return { message: 'Kindly verify this user' };
       }
       if (!user || !user == (await compare(loginDTO.password, user.password))) {
-        return { message: 'Password not matched'};
+        return { message: 'Password not matched' };
       } else {
         access_token = await Generatesignature({
           id: user.id,
@@ -163,13 +196,55 @@ export class UsersService {
       }
       return {
         message: 'You have successfully logged in',
-        access_token
+        access_token,
       };
     } catch (error) {
       console.log(error);
     }
   }
 
+  public async updateUserProfile(find: any, update: any): Promise<any> {
+    try {
+      console.log(find.user.userId);
+      const id = find.user.userId;
+      const user = await this.userRepository.findOne({ where: { id: id } });
+
+      if (!user) {
+        return {
+          Error: 'You are not authorized to update your profile',
+        };
+      }
+      user.firstName = update.body;
+      user.lastName = update.body;
+      user.dateOfBirth = update.body;
+      user.phoneNumber = update.body;
+
+      const updatedUser = { ...user, ...update.body };
+      const updatedUserRecord = await this.userRepository.update(updatedUser, {
+        id,
+      });
+
+      if (updatedUserRecord) {
+        const user = await this.userRepository.findOne({
+          where: { id: id },
+        });
+        return {
+          message: 'Successfully updated',
+          user,
+        };
+      }
+      return {
+        Error: 'An error occurs',
+      };
+    } catch (error) {
+      throw new Error(error);
+      return {
+        Error: `Internal server ${error}`,
+        throw: new Error(error),
+        route: 'users/update-user-profile',
+      };
+    }
+  }
   async createForgottenPasswordToken(email: string) {
     const uuid = uuidv4();
 
@@ -259,7 +334,10 @@ export class UsersService {
     }
   }
 
-  public async resetPassword(resetToken: string, newPassword: string): Promise<void> {
+  public async resetPassword(
+    resetToken: string,
+    newPassword: string,
+  ): Promise<void> {
     const user = await this._findByAttr(resetToken);
 
     if (!user) {

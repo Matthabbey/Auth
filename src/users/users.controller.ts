@@ -12,6 +12,8 @@ import {
   HttpException,
   HttpStatus,
   UseGuards,
+  Patch,
+  Res,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CahngeAccountStatusDTO } from './dtos';
@@ -19,6 +21,7 @@ import { AccountState } from './account-state';
 import { User } from './entities';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from 'src/middlewares/jwt-auth.guard';
+import { Request } from 'express';
 
 @Controller('users')
 @UsePipes(new ValidationPipe())
@@ -54,6 +57,15 @@ export class UsersController {
     return this.usersService.findUserByEmail(request)
     }
   
+  @UseGuards(JwtAuthGuard)
+  @Patch('update-profile')
+  async updateProfile(
+    @Req() req: Request,
+    @Body() update: any
+   ){
+    console.log("Hello", req.user)
+    return this.usersService.updateUserProfile(req, update)
+   }
 
   @HttpCode(204)
   @Delete(':id/account-deletion')

@@ -21,11 +21,18 @@ export class User {
   @Column()
   otp: number;
 
-  @Column({ length: 255 })
-  salt: string;
+  @Column({ length: 255, nullable: false})
+  phoneNumber: string;
+
+  @Column({ type: 'date', default: '1970-01-01'}) // Column type set to 'date'
+  dateOfBirth: Date;
 
   @Column({ nullable: true })
   resetToken: string;
+
+
+  @Column({ length: 255 })
+  salt: string;
 
   @Column({ default: false })
   verified: boolean;
