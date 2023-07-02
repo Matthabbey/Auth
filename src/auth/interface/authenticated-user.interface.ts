@@ -4,5 +4,4 @@ export interface AuthenticatedUser {
     readonly lastName: string
     readonly email: string
     readonly salt: string
-    // readonly otp: number
 }

@@ -19,8 +19,7 @@ import { UsersService } from './users.service';
 import { CahngeAccountStatusDTO } from './dtos';
 import { AccountState } from './account-state';
 import { User } from './entities';
-import { JwtService } from '@nestjs/jwt';
-import { JwtAuthGuard } from 'src/middlewares/jwt-auth.guard';
+import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { Request } from 'express';
 
 @Controller('users')

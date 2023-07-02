@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { LoginDTO, SignupDTO } from './dtos';
 import { AuthService } from './auth.service';
-import { LocalAuthGuard } from 'src/middlewares/local-auth.guard';
 
 @Controller('auth')
 @UsePipes(new ValidationPipe())

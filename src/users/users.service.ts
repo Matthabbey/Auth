@@ -1,4 +1,9 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -134,10 +139,6 @@ export class UsersService {
             HttpStatus.FORBIDDEN,
           );
         }
-
-        //   const html = emailHtml(otp);
-
-        // await mailSent(process.env.ADMIN, signupDTO.email, process.env.USER, html);
         return this.userRepository.save(user);
       }
     } catch (error) {
@@ -214,30 +215,24 @@ export class UsersService {
           Error: 'You are not authorized to update your profile',
         };
       }
-      user.firstName = update.body;
-      user.lastName = update.body;
-      user.dateOfBirth = update.body;
-      user.phoneNumber = update.body;
+      const { firstName, lastName, phoneNumber, dateOfBirth } = update;
 
-      const updatedUser = { ...user, ...update.body };
-      const updatedUserRecord = await this.userRepository.update(updatedUser, {
-        id,
-      });
+      const updatedUser = await this.userRepository
+        .createQueryBuilder()
+        .update(user)
+        .set({ firstName, lastName, phoneNumber, dateOfBirth }) // Specify the updated values using the set method
+        .where({ id })
+        .execute();
 
-      if (updatedUserRecord) {
-        const user = await this.userRepository.findOne({
-          where: { id: id },
-        });
-        return {
-          message: 'Successfully updated',
-          user,
-        };
+      if (updatedUser.affected === 0) {
+        throw new NotFoundException('User not found');
       }
-      return {
-        Error: 'An error occurs',
-      };
+
+      const updated = await this.userRepository.findOne({ where: { id } });
+
+      return { message: 'Successfully updated', succ: updated };
     } catch (error) {
-      throw new Error(error);
+      // throw new Error(error);
       return {
         Error: `Internal server ${error}`,
         throw: new Error(error),
