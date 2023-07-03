@@ -1,6 +1,9 @@
-import { IsNumber, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
 
 export class OtpDTO {
-    @IsNumber()
-    readonly otp: number
+
+    @ApiProperty()
+    @IsString()
+    readonly otp?: string
 }

@@ -1,23 +1,16 @@
 import {
   Body,
   Controller,
-  Delete,
   HttpCode,
-  Param,
-  Put,
   UsePipes,
   ValidationPipe,
   Get,
   Req,
-  HttpException,
-  HttpStatus,
   UseGuards,
   Patch,
-  Res,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CahngeAccountStatusDTO, UpdateUserDTO } from './dtos';
-import { AccountState } from './account-state';
+import { UpdateUserDTO } from './dtos';
 import { User } from './entities';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { Request } from 'express';
@@ -26,7 +19,6 @@ import {
   ApiInternalServerErrorResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiResponse,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';

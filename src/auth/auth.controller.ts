@@ -1,20 +1,18 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
-  Param,
   Post,
-  Res,
-  UseFilters,
+  Req,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { LoginDTO, SignupDTO } from './dtos';
+import { LoginDTO, OtpDTO, SignupDTO } from './dtos';
 import { AuthService } from './auth.service';
-import { ApiBadRequestResponse, ApiConflictResponse, ApiEmailAlreadyExist, ApiInternalServerErrorResponse, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { HttpExceptionFilter } from './decorator';
+import { ApiBearerAuth, ApiCreatedResponse, ApiInternalServerErrorResponse, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
+import { JwtAuthGuard } from 'src/middlewares/jwt-auth.guard';
 
 @ApiTags("auth")
 @Controller('auth')
@@ -24,16 +22,17 @@ export class AuthController {
   
   // @ApiProduces('application/json')
   @ApiInternalServerErrorResponse({description: "Expectation Failed Here", status: 417})
-  @HttpCode(201)
+  @ApiCreatedResponse()
   @Post('signup')
   async onUserSignUp(@Body() signupDTO: SignupDTO) {
     return this.authService.signUp(signupDTO);
   }
-
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(200)
   @Post('email/verify')
-  async verifyEmail(@Body('otp') otp: number) {
-    return this.authService.emailVerify(otp);
+  async verifyEmail(@Req() req: Request, @Body('otp') otp: OtpDTO) {
+    return this.authService.emailVerify(otp, req);
   }
 
   
@@ -45,20 +44,4 @@ export class AuthController {
     return await this.authService.login(loginDTO);
   }
 
-  
-
-  @HttpCode(201)
-  @Post('email/forgot-password')
-  async sendEmailForgotPassword(@Body('email') email: string) {
-    return await this.authService.sendEmailForgotPassword(email);
-  }
-
-  @HttpCode(201)
-  @Post('email/reset-password')
-  async resetPassword(
-    @Param(':resetToken') params: any,
-    @Body('email') newPassword: string,
-  ) {
-    return await this.authService.resetPassword(params.resetToken, newPassword);
-  }
 }

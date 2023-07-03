@@ -1,5 +1,4 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { AccountState } from '../account-state';
 
 @Entity()
 export class User {
@@ -19,7 +18,7 @@ export class User {
   password: string;
 
   @Column()
-  otp: number;
+  otp?: string;
 
   @Column({ length: 255, nullable: false})
   phoneNumber: string;
@@ -36,9 +35,6 @@ export class User {
 
   @Column({ default: false })
   verified: boolean;
-
-  @Column({ default: AccountState.ACTIVE })
-  accountState: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   timestamp: Date;
