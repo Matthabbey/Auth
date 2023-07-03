@@ -7,7 +7,7 @@ export class PasswordIsWeak extends HttpException {
         error: 'Password is weak',
         reason,
       },
-      HttpStatus.EXPECTATION_FAILED,
+      HttpStatus.CONFLICT,
     );
   }
 }

@@ -18,7 +18,7 @@ export class User {
   password: string;
 
   @Column()
-  otp?: string;
+  otp: Number;
 
   @Column({ length: 255, nullable: false})
   phoneNumber: string;

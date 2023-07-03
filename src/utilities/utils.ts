@@ -10,7 +10,7 @@ export const GenerateSalt = async () => {
 
 export const generateOTP = () => {
   // Generate a random OTP (e.g., 4-digit number)
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return Math.floor(1000 + Math.random() * 9000);
 };
 
 export const GeneratePassword = async (

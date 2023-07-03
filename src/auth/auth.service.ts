@@ -5,12 +5,20 @@ import { PasswordIsWeak } from './errors';
 import { User } from '../users/entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserNotFoundError } from '../users/errors';
+import {
+  EmailAlreadyExistsException,
+  UserNotFoundError,
+} from '../users/errors';
 import { compare } from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 import { UsersService } from '../users';
-import { GeneratePassword, GenerateSalt, Generatesignature, generateOTP } from '../utilities';
-
+import {
+  GeneratePassword,
+  GenerateSalt,
+  Generatesignature,
+  generateOTP,
+} from '../utilities';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -31,81 +39,87 @@ export class AuthService {
   async _findByAttr(email: string) {
     return await this.userRepository.findOne({ where: { email: email } });
   }
-  public async signUp(signupDTO: SignupDTO) {
-    this.verifyPasswordStrength(signupDTO.password);
-      try {
-        let user: any;
-        const salt = await GenerateSalt();
-        const otp = generateOTP();
-        const userPassword = await GeneratePassword(signupDTO.password, salt);
-        const existingUser = await this.userRepository.findOne({where: {email: signupDTO.email}});
-        if (existingUser.email === signupDTO.email) {
-          return {message: "Email already exist"}
-        }
-        if (!existingUser) {
-          user = this.userRepository.create();
-          user.email = signupDTO.email;
-          user.firstName = signupDTO.firstName;
-          user.lastName = signupDTO.lastName;
-          user.password = userPassword;
-          user.verified = false;
-          user.phoneNumber = signupDTO.phoneNumber,
-          user.dateOfBirth = signupDTO.dateOfBirth,
-          user.salt = salt;
-          user.otp = otp;
-  
-          if (user) {
-            let transporter = nodemailer.createTransport({
-              service: 'gmail',
-              auth: {
-                user: process.env.GMAIL_USER, // generated ethereal user
-                pass: process.env.GMAIL_PASSWORD, // generated ethereal password
-              },
-              tls: {
-                rejectUnauthorized: false,
-              },
-            });
-  
-            let mailOptions = {
-              from: '"Company" <' + process.env.USER_NAME + '>',
-              to: user.email, // list of receivers (separated by ,)
-              subject: 'OTP',
-              text: 'OtP',
-              html: `Here is your  OTP ${otp} to verify your account`, // html body
-            };
-  
-            const sent = await new Promise<boolean>(async function (
-              resolve,
-              reject,
-            ) {
-              return await transporter.sendMail(
-                mailOptions,
-                async (error, info) => {
-                  if (error) {
-                    console.log('Message sent: %s', error);
-                    return reject(false);
-                  }
-                  console.log('Message sent: %s', info.messageId);
-                  resolve(true);
-                },
-              );
-            });
-          } else {
-            throw new HttpException(
-              'REGISTER.USER_NOT_REGISTERED',
-              HttpStatus.FORBIDDEN,
-            );
-          }
-          return this.userRepository.save(user);
-        }
-      } catch (error) {
-        console.log(error.message);
-        throw new Error(error);
-      }
-    }
 
-    // const user = await this.usersService.createUser(signupDTO);
-    // return user;
+  async signUp(signupDTO: SignupDTO, res: Response) {
+    this.verifyPasswordStrength(signupDTO.password);
+    try {
+      let user: any;
+      const salt = await GenerateSalt();
+      const otp = generateOTP();
+      const userPassword = await GeneratePassword(signupDTO.password, salt);
+      const existingUser = await this.userRepository.findOne({
+        where: { email: signupDTO.email },
+      });
+      if (existingUser.email === signupDTO.email) {
+        // return { message: 'Email already exist' };
+        return res
+          .status(HttpStatus.BAD_REQUEST)
+          .json({ message: 'Email Already Exist' });
+
+        throw new EmailAlreadyExistsException();
+      }
+      if (!existingUser) {
+        user = this.userRepository.create();
+        user.email = signupDTO.email;
+        user.firstName = signupDTO.firstName;
+        user.lastName = signupDTO.lastName;
+        user.password = userPassword;
+        user.verified = false;
+        (user.phoneNumber = signupDTO.phoneNumber),
+          (user.dateOfBirth = signupDTO.dateOfBirth),
+          (user.salt = salt);
+        user.otp = otp;
+
+        if (user) {
+          let transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.GMAIL_USER, // generated ethereal user
+              pass: process.env.GMAIL_PASSWORD, // generated ethereal password
+            },
+            tls: {
+              rejectUnauthorized: false,
+            },
+          });
+
+          let mailOptions = {
+            from: '"Company" <' + process.env.USER_NAME + '>',
+            to: user.email, // list of receivers (separated by ,)
+            subject: 'OTP',
+            text: 'OtP',
+            html: `Here is your  OTP ${otp} to verify your account`, // html body
+          };
+
+          const sent = await new Promise<boolean>(async function (
+            resolve,
+            reject,
+          ) {
+            return await transporter.sendMail(
+              mailOptions,
+              async (error, info) => {
+                if (error) {
+                  console.log('Message sent: %s', error);
+                  return reject(false);
+                }
+                console.log('Message sent: %s', info.messageId);
+                resolve(true);
+              },
+            );
+          });
+        } else {
+          throw new HttpException(
+            'REGISTER.USER_NOT_REGISTERED',
+            HttpStatus.FORBIDDEN,
+          );
+        }
+        const success = this.userRepository.save(user);
+        return { message: 'Check your mail verification code', user };
+      }
+    } catch (error) {
+      console.log(error.message);
+      throw new Error(error);
+    }
+  }
 
   public async emailVerify(token: OtpDTO, find: any) {
     console.log(find.user.userId);
@@ -136,7 +150,7 @@ export class AuthService {
     }
   }
 
-  public async login(loginDTO: LoginDTO) {
+  public async login(loginDTO: LoginDTO, res: Response) {
     try {
       let access_token: any;
       const user = await this._findByAttr(loginDTO.email);
@@ -160,9 +174,9 @@ export class AuthService {
         access_token,
       };
     } catch (error) {
-      return {
-        message: 'Invalid Credentials',
-      };
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ message: 'Invalid Credentials' });
     }
   }
 }
