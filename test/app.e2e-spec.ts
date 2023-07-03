@@ -32,6 +32,8 @@ describe('AppController (e2e)', () => {
       password: '1234567890',
       lastName: '',
       firstName: '',
+      phoneNumber: '',
+      dateOfBirth: ''
     };
     describe('Signup', () => {
       it('should throw if email is empty', () => {

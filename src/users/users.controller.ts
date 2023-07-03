@@ -16,66 +16,52 @@ import {
   Res,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CahngeAccountStatusDTO } from './dtos';
+import { CahngeAccountStatusDTO, UpdateUserDTO } from './dtos';
 import { AccountState } from './account-state';
 import { User } from './entities';
 import { JwtAuthGuard } from '../middlewares/jwt-auth.guard';
 import { Request } from 'express';
+import {
+  ApiBearerAuth,
+  ApiInternalServerErrorResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 
+@ApiTags('user')
 @Controller('users')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @UsePipes(new ValidationPipe())
 export class UsersController {
-  constructor(
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly usersService: UsersService) {}
 
-  @HttpCode(204)
-  @Put(':id/account-deactivition')
-  async onAccountDeactivition(
-    @Param(':id') id: string,
-    @Body() changeAccountStatusDTO: CahngeAccountStatusDTO,
-  ) {
-    await this.usersService.changeStatusAccount({
-      id,
-      ...changeAccountStatusDTO,
-      state: AccountState.INACTIVE,
-    });
-  }
-
-  // @ApiBearerAuth()
-  // @UseGuards(JwtAuthGuard)
+  @ApiInternalServerErrorResponse()
+  @ApiUnauthorizedResponse()
+  @ApiOkResponse({ type: User })
   @HttpCode(200)
   @Get('all')
   async onGetUsers(): Promise<User[]> {
     return this.usersService.getAllUsers();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse()
+  @ApiNotFoundResponse()
+  @ApiUnauthorizedResponse()
   @Get('user')
-  async findOneUser(@Req() request: any) {
-    return this.usersService.findUserByEmail(request)
-    }
-  
-  @UseGuards(JwtAuthGuard)
-  @Patch('update-profile')
-  async updateProfile(
-    @Req() req: Request,
-    @Body() update: any
-   ){
-    console.log("Hello", req.user)
-    return this.usersService.updateUserProfile(req, update)
-   }
+  async findOneUser(@Body() body: any) {
+    return this.usersService.findUserByEmail(body);
+  }
 
-  @HttpCode(204)
-  @Delete(':id/account-deletion')
-  async onAccountDeletion(
-    @Param('id') id: string,
-    @Body() changeAccountStatusDTO: CahngeAccountStatusDTO,
-  ) {
-    await this.usersService.changeStatusAccount({
-      id,
-      ...changeAccountStatusDTO,
-      state: AccountState.DELETED,
-    });
+  @ApiOkResponse()
+  @ApiNotFoundResponse()
+  @ApiUnauthorizedResponse()
+  @Patch('update-profile')
+  async updateProfile(@Req() req: Request, @Body() update: UpdateUserDTO) {
+    console.log('Hello', req.user);
+    return this.usersService.updateUserProfile(req, update);
   }
 }

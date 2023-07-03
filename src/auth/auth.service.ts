@@ -25,17 +25,11 @@ export class AuthService {
   /**
    * signUp
    */
-  public async signUp(signupDTO: SignupDTO): Promise<AuthenticatedUser> {
+  public async signUp(signupDTO: SignupDTO){
     this.verifyPasswordStrength(signupDTO.password);
 
     const user = await this.usersService.createUser(signupDTO);
-    return {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      salt: user.salt,
-    };
+    return user
   }
 
   public async emailVerify(otpDTO: any){

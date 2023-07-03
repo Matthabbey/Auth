@@ -1,24 +1,15 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
-import { AuthenticatedUser } from 'src/auth/interface';
+// import { HttpException, HttpStatus } from '@nestjs/common';
 
-// export class EmailIsTakenError extends HttpException {
-//   constructor() {
-//     super(
-//       'The email provided is already associated with an existing user.',
-//       HttpStatus.CONFLICT,
-//     );
-//   }
-// }
+import { HttpException, HttpStatus } from "@nestjs/common";
 
-export class EmailIsTakenError extends Error implements AuthenticatedUser {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-
+export class EmailAlreadyExistsException extends HttpException {
   constructor() {
-    super('Email is already taken');
+    super('Email already exists', HttpStatus.CONFLICT);
   }
-  salt: string;
-  EmailIsTakenError: string;
 }
+
+export class CustomFuelStationException extends HttpException{ 
+  constructor(message: string, statusCode: number) { 
+      super(message, statusCode); 
+  } 
+} 

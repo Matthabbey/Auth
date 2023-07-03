@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -11,7 +12,8 @@ import { User } from './entities';
 import { LoginDTO, SignupDTO } from 'src/auth/dtos';
 import {
   CannotChangeToSameStateError,
-  EmailIsTakenError,
+  CustomFuelStationException,
+  EmailAlreadyExistsException,
   PasswordNotMatchError,
   UserNotFoundError,
 } from './errors';
@@ -29,7 +31,7 @@ import { compare } from 'bcrypt';
 import { AuthenticatedUser, ForgottenPassword } from 'src/auth/interface';
 import * as nodemailer from 'nodemailer';
 import { JwtService } from '@nestjs/jwt';
-import { JwtPayload } from 'jsonwebtoken';
+import { UpdateUserDTO } from './dtos';
 
 @Injectable()
 export class UsersService {
@@ -51,14 +53,12 @@ export class UsersService {
       const data = req.user;
 
       if (!data) {
-        throw new HttpException('USER NOT FOUND', HttpStatus.NOT_FOUND);
+        throw new NotFoundException();
       }
 
       const user = await this._findByAttr(data.email);
       if (!user) {
-        return {
-          message: 'User Not Found',
-        };
+       throw new NotFoundException()
       }
 
       const { password, resetToken, salt, ...result } = user;
@@ -77,15 +77,15 @@ export class UsersService {
     }
   }
 
-  public async createUser(signupDTO: SignupDTO): Promise<AuthenticatedUser> {
+  public async createUser(signupDTO: SignupDTO) {
     try {
       let user: any;
       const salt = await GenerateSalt();
       const otp = generateOTP();
       const userPassword = await GeneratePassword(signupDTO.password, salt);
-      const existingUser = await this._findByAttr(signupDTO.email);
-      if (existingUser) {
-        throw new EmailIsTakenError();
+      const existingUser = await this.userRepository.findOne({where: {email: signupDTO.email}});
+      if (existingUser.email === signupDTO.email) {
+        return {message: "Email already exist"}
       }
       if (!existingUser) {
         user = this.userRepository.create();
@@ -94,6 +94,8 @@ export class UsersService {
         user.lastName = signupDTO.lastName;
         user.password = userPassword;
         user.verified = false;
+        user.phoneNumber = signupDTO.phoneNumber,
+        user.dateOfBirth = signupDTO.dateOfBirth,
         user.salt = salt;
         user.otp = otp;
 
@@ -149,6 +151,7 @@ export class UsersService {
 
   public async emailVerification(token: number) {
     const verify = await this.userRepository.findOne({ where: { otp: token } });
+
     if (!token) {
       return { message: 'Wrong Token For verification' };
     }
@@ -157,17 +160,14 @@ export class UsersService {
       const user = await this.userRepository.findOne({
         where: { email: verify.email },
       });
-      if (user) {
+      if(user.verified == true){
+        return { message: "User has been verified"}
+      }
+      if (!user.verified === true) {
         user.verified = true;
         const userVerified = await this.userRepository.save(user);
-        if (userVerified.verified === true) {
-          throw new HttpException(
-            'THIS_USER HAS ALREADY BEEN VERIFIED',
-            HttpStatus.FORBIDDEN,
-          );
-        }
-        return { message: user.verified };
       }
+      return { message: "User verification successful" };
     } else {
       throw new HttpException(
         'LOGIN_EMAIL_CODE_NOT_VERIFIED',
@@ -200,11 +200,13 @@ export class UsersService {
         access_token,
       };
     } catch (error) {
-      console.log(error);
-    }
+      return {
+        message: 'Invalid Credentials'
+      };
   }
+}
 
-  public async updateUserProfile(find: any, update: any): Promise<any> {
+  public async updateUserProfile(find: any, update: UpdateUserDTO): Promise<any> {
     try {
       console.log(find.user.userId);
       const id = find.user.userId;

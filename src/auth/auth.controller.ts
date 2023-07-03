@@ -6,18 +6,24 @@ import {
   Param,
   Post,
   Res,
+  UseFilters,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { LoginDTO, SignupDTO } from './dtos';
 import { AuthService } from './auth.service';
+import { ApiBadRequestResponse, ApiConflictResponse, ApiEmailAlreadyExist, ApiInternalServerErrorResponse, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { HttpExceptionFilter } from './decorator';
 
+@ApiTags("auth")
 @Controller('auth')
 @UsePipes(new ValidationPipe())
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  
+  // @ApiProduces('application/json')
+  @ApiInternalServerErrorResponse({description: "Expectation Failed Here", status: 417})
   @HttpCode(201)
   @Post('signup')
   async onUserSignUp(@Body() signupDTO: SignupDTO) {
@@ -31,7 +37,6 @@ export class AuthController {
   }
 
   
-  // @UseGuards(LocalAuthGuard)
   @HttpCode(200)
   @Post('login')
   async onUserLogin(
