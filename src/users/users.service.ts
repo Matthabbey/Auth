@@ -21,17 +21,18 @@ export class UsersService {
    async findUserByEmail(req: any) {
     try {
       const data = req.user;
+      console.log(data)
 
       if (!data) {
         throw new NotFoundException();
       }
 
-      const user = await this.userRepository.findOne(data.email);
+      const user = await this.userRepository.findOne({where: {email:data.email}});
       if (!user) {
         throw new NotFoundException();
       }
 
-      const { password, resetToken, salt, ...result } = user;
+      const { password, resetToken, salt, otp, ...result } = user;
 
       return result;
     } catch (e) {
@@ -44,7 +45,6 @@ export class UsersService {
     update: UpdateUserDTO,
   ): Promise<any> {
     try {
-      console.log(find.user.userId);
       const id = find.user.userId;
       const user = await this.userRepository.findOne({ where: { id: id } });
 
@@ -68,9 +68,8 @@ export class UsersService {
 
       const updated = await this.userRepository.findOne({ where: { id } });
 
-      return { message: 'Successfully updated', succ: updated };
+      return { message: 'Successfully updated', success: updated };
     } catch (error) {
-      // throw new Error(error);
       return {
         Error: `Internal server ${error}`,
         throw: new Error(error),

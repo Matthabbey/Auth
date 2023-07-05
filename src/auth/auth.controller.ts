@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { LoginDTO, OtpDTO, SignupDTO } from './dtos';
 import { AuthService } from './auth.service';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiInternalServerErrorResponse, ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiInternalServerErrorResponse, ApiOkResponse, ApiResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/middlewares/jwt-auth.guard';
 
@@ -29,17 +29,18 @@ export class AuthController {
     return this.authService.signUp(signupDTO, res);
   }
 
+
+  @ApiBadRequestResponse()
+  @ApiForbiddenResponse()
   @ApiUnauthorizedResponse()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @HttpCode(200)
   @Post('email/verify')
-  async verifyEmail(@Req() req: Request, @Body() otp: OtpDTO) {
-    return this.authService.emailVerify(otp, req);
+  async verifyEmail(@Body() otp: OtpDTO) {
+    return this.authService.emailVerify(otp);
   }
 
   @ApiBadRequestResponse()
-  @HttpCode(200)
+  @ApiOkResponse()
   @Post('login')
   async onUserLogin(
     @Body() loginDTO: LoginDTO,

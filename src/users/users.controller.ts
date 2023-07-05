@@ -36,16 +36,17 @@ export class UsersController {
   @ApiOkResponse({ type: User })
   @HttpCode(200)
   @Get('all')
-  async onGetUsers(): Promise<User[]> {
+  async onGetUsers(@Req() res: Request): Promise<User[]> {
     return this.usersService.getAllUsers();
   }
+
 
   @ApiOkResponse()
   @ApiNotFoundResponse()
   @ApiUnauthorizedResponse()
   @Get('user')
-  async findOneUser(@Body() body: any) {
-    return this.usersService.findUserByEmail(body);
+  async findOneUser(@Req() req: Request) {
+    return this.usersService.findUserByEmail(req);
   }
 
   @ApiOkResponse()

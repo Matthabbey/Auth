@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth';
@@ -6,6 +6,7 @@ import { User } from './users/entities';
 import { UsersController } from './users';
 import * as dotenv from 'dotenv'
 import { JwtModule } from '@nestjs/jwt';
+import { BvnModule } from './bvn/bvn.module';
 dotenv.config()
 
 @Module({
@@ -23,9 +24,10 @@ dotenv.config()
     }),
     UsersModule,
     AuthModule,
+    BvnModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: {expiresIn: '1d'}
+      signOptions: {expiresIn: '3m'}
   })
     
   ],

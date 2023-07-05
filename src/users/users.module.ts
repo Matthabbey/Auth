@@ -19,8 +19,4 @@ import { JwtStrategy } from '../middlewares/jwt-strategy';
   exports: [UsersService],
 })
 export class UsersModule {}
-// export class UsersModule implements NestModule {
-//   configure(consumer: MiddlewareConsumer): void | MiddlewareConsumer {
-//     consumer.apply(AuthMiddleware).forRoutes(UsersController);
-//   }
-// }
+
